@@ -14,6 +14,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import GameCard from "@/components/game-card";
+import {
+  createGame,
+  updateGameState,
+  getGameState,
+} from "@/lib/actions/multiplayer-state";
 
 // Define types
 interface GameState {
@@ -53,6 +58,7 @@ const answerCards: string[] = [
 ];
 
 const RetrosAgainstHumanity: React.FC = () => {
+  const [gameId, setGameId] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState>({
     players: {},
     currentPrompt: "",
@@ -70,13 +76,19 @@ const RetrosAgainstHumanity: React.FC = () => {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const gameStateParam = urlParams.get("gameState");
-    if (gameStateParam) {
-      setGameState(JSON.parse(atob(gameStateParam)));
+    const gameIdParam = urlParams.get("gameId");
+    if (gameIdParam) {
+      setGameId(gameIdParam);
+      fetchGameState(gameIdParam);
     } else {
       drawPromptCard();
     }
   }, []);
+
+  const fetchGameState = async (gameId: string) => {
+    const state = await getGameState(gameId);
+    setGameState(state);
+  };
 
   const drawPromptCard = (): void => {
     const randomIndex = Math.floor(Math.random() * promptCards.length);
@@ -115,14 +127,17 @@ const RetrosAgainstHumanity: React.FC = () => {
     }
   };
 
-  const submitCard = (content: string): void => {
-    setGameState((prevState) => ({
-      ...prevState,
+  const submitCard = async (content: string): Promise<void> => {
+    const newState = {
+      ...gameState,
       playedCards: {
-        ...prevState.playedCards,
+        ...gameState.playedCards,
         [playerId]: content,
       },
-    }));
+    };
+    setGameState(newState);
+    await updateGameState(gameId!, newState);
+
     const newHand = hand.filter((card) => card.id !== selectedCardId);
     setHand(newHand);
     setSelectedCardId(null);
@@ -140,25 +155,32 @@ const RetrosAgainstHumanity: React.FC = () => {
     }
   };
 
-  const joinGame = (): void => {
+  const joinGame = async (): Promise<void> => {
     if (playerName) {
       const newPlayerId = Math.random().toString(36).substr(2, 9);
       setPlayerId(newPlayerId);
-      setGameState((prevState) => ({
-        ...prevState,
+      const newState = {
+        ...gameState,
         players: {
-          ...prevState.players,
+          ...gameState.players,
           [newPlayerId]: playerName,
         },
-        currentPlayerId: prevState.currentPlayerId || newPlayerId,
-      }));
+        currentPlayerId: gameState.currentPlayerId || newPlayerId,
+      };
+      setGameState(newState);
+      if (!gameId) {
+        const newGameId = await createGame(newState);
+        setGameId(newGameId);
+        window.history.replaceState(null, "", `?gameId=${newGameId}`);
+      } else {
+        await updateGameState(gameId, newState);
+      }
       dealHand();
     }
   };
 
   const getShareLink = (): string => {
-    const gameStateString = btoa(JSON.stringify(gameState));
-    return `${window.location.origin}${window.location.pathname}?gameState=${gameStateString}`;
+    return `${window.location.origin}${window.location.pathname}?gameId=${gameId}`;
   };
 
   const copyShareLink = (): void => {
