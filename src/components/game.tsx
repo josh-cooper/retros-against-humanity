@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shuffle, Copy, UserPlus, Edit } from "lucide-react";
+import { Shuffle, Copy, UserPlus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import GameCard from "@/components/game-card";
 
 // Define types
 interface GameState {
@@ -26,15 +27,6 @@ interface Card {
   id: string;
   content: string;
   isBlank: boolean;
-}
-
-interface GameCardProps {
-  id: string;
-  content: string;
-  isPrompt: boolean;
-  isSelected: boolean;
-  isBlank: boolean;
-  onClick: (id: string) => void;
 }
 
 const promptCards: string[] = [
@@ -59,74 +51,6 @@ const answerCards: string[] = [
   "[BLANK]",
   "[BLANK]",
 ];
-
-const GameCard: React.FC<GameCardProps> = ({
-  id,
-  content,
-  isPrompt,
-  isSelected,
-  isBlank,
-  onClick,
-}) => (
-  <div
-    className={`relative w-48 h-64 rounded-lg shadow-lg cursor-pointer transition-transform transform hover:scale-105 ${
-      isSelected ? "ring-4 ring-blue-500" : ""
-    }`}
-    onClick={() => onClick(id)}
-  >
-    <svg className="absolute inset-0" viewBox="0 0 192 256">
-      <rect
-        width="192"
-        height="256"
-        rx="16"
-        fill={isPrompt ? "#1a1a1a" : "#ffffff"}
-      />
-      <text
-        x="16"
-        y="40"
-        fontSize="18"
-        fontWeight="bold"
-        fill={isPrompt ? "#ffffff" : "#000000"}
-      >
-        Retros Against
-      </text>
-      <text
-        x="16"
-        y="64"
-        fontSize="18"
-        fontWeight="bold"
-        fill={isPrompt ? "#ffffff" : "#000000"}
-      >
-        Humanity
-      </text>
-      {isBlank ? (
-        <g>
-          <text
-            x="96"
-            y="140"
-            fontSize="24"
-            fontWeight="bold"
-            fill="#000000"
-            textAnchor="middle"
-          >
-            [BLANK]
-          </text>
-          <Edit x="84" y="160" width="24" height="24" />
-        </g>
-      ) : (
-        <text
-          x="16"
-          y="112"
-          width="160"
-          fontSize="14"
-          fill={isPrompt ? "#ffffff" : "#000000"}
-        >
-          {content}
-        </text>
-      )}
-    </svg>
-  </div>
-);
 
 const RetrosAgainstHumanity: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>({
