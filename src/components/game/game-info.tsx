@@ -41,15 +41,16 @@ const GameInfo: React.FC<GameInfoProps> = ({
                 {gameState.players[playerId]}:
               </span>{" "}
               {card}
-              {gameState.gamePhase === "judging" &&
-                playerId === gameState.currentPlayerId && (
+              {gameState.gamePhase === "voting" &&
+                playerId !== gameState.currentPlayerId && (
                   <Button
                     onClick={() => onSelectWinner(playerId)}
                     variant="outline"
                     size="sm"
                     className="ml-2"
+                    disabled={gameState.votes[playerId] !== undefined}
                   >
-                    Select Winner
+                    Vote
                   </Button>
                 )}
               {gameState.gamePhase === "roundEnd" &&

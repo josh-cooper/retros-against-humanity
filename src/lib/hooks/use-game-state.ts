@@ -18,6 +18,7 @@ export const useGameState = () => {
     round: 0,
     gamePhase: "playing",
     winner: null,
+    votes: {},
   });
   const [playerName, setPlayerName] = useState<string>("");
   const [playerId, setPlayerId] = useState<string>("");
@@ -81,6 +82,7 @@ export const useGameState = () => {
       round: 0,
       gamePhase: "playing",
       winner: null,
+      votes: {},
     };
     const newGameId = await createGame(newGameState);
     setGameId(newGameId as string);
@@ -134,7 +136,7 @@ export const useGameState = () => {
         Object.keys(newState.players).length &&
       Object.keys(newState.players).length > 1
     ) {
-      newState.gamePhase = "judging";
+      newState.gamePhase = "voting";
     }
 
     setGameState(newState);
@@ -146,6 +148,38 @@ export const useGameState = () => {
     if (newHand.length < 3) {
       dealHand();
     }
+  };
+
+  const vote = async (votedPlayerId: string): Promise<void> => {
+    const newState = {
+      ...gameState,
+      votes: {
+        ...gameState.votes,
+        [playerId]: votedPlayerId,
+      },
+    };
+
+    // Check if all players have voted
+    if (
+      Object.keys(newState.votes).length ===
+      Object.keys(newState.players).length
+    ) {
+      newState.gamePhase = "roundEnd";
+      newState.winner = determineWinner(newState.votes);
+    }
+
+    setGameState(newState);
+    await updateGameState(gameId!, newState);
+  };
+
+  const determineWinner = (votes: Record<string, string>): string => {
+    const voteCounts: Record<string, number> = {};
+    Object.values(votes).forEach((votedPlayerId) => {
+      voteCounts[votedPlayerId] = (voteCounts[votedPlayerId] || 0) + 1;
+    });
+    return Object.entries(voteCounts).reduce((a, b) =>
+      a[1] > b[1] ? a : b
+    )[0];
   };
 
   const startNewRound = async (): Promise<void> => {
@@ -160,20 +194,11 @@ export const useGameState = () => {
         gameState.round % Object.keys(gameState.players).length
       ],
       winner: null,
+      votes: {}, // Reset votes for the new round
     };
     setGameState(newState);
     await updateGameState(gameId!, newState);
     dealHand();
-  };
-
-  const selectWinner = async (winningPlayerId: string): Promise<void> => {
-    const newState: GameState = {
-      ...gameState,
-      gamePhase: "roundEnd",
-      winner: winningPlayerId,
-    };
-    setGameState(newState);
-    await updateGameState(gameId!, newState);
   };
 
   return {
@@ -186,6 +211,6 @@ export const useGameState = () => {
     playCard,
     dealHand,
     startNewRound,
-    selectWinner,
+    vote, // Add this line to expose the vote function
   };
 };

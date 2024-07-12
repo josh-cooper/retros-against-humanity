@@ -4,8 +4,9 @@ export interface GameState {
   currentPlayerId: string | null;
   playedCards: { [key: string]: string };
   round: number;
-  gamePhase: "playing" | "judging" | "roundEnd";
+  gamePhase: "playing" | "voting" | "roundEnd";
   winner: string | null;
+  votes: { [key: string]: string };
 }
 
 export interface Card {

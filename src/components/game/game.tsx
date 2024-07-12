@@ -20,7 +20,7 @@ const RetrosAgainstHumanity: React.FC = () => {
     playCard,
     dealHand,
     startNewRound,
-    selectWinner,
+    vote,
   } = useGameState();
 
   const [showAlert, setShowAlert] = useState<boolean>(false);
@@ -52,6 +52,7 @@ const RetrosAgainstHumanity: React.FC = () => {
             onPlayCard={playCard}
             onDealHand={dealHand}
             onStartNewRound={startNewRound}
+            onVote={vote}
           />
 
           <Button
@@ -73,7 +74,7 @@ const RetrosAgainstHumanity: React.FC = () => {
           <GameInfo
             gameState={gameState}
             playerId={playerId}
-            onSelectWinner={selectWinner}
+            onSelectWinner={vote}
           />
         </>
       )}

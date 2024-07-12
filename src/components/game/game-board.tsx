@@ -12,6 +12,7 @@ interface GameBoardProps {
   onPlayCard: (content: string) => void;
   onDealHand: () => void;
   onStartNewRound: () => void;
+  onVote: (votedPlayerId: string) => void;
 }
 
 const GameBoard: React.FC<GameBoardProps> = ({
@@ -21,6 +22,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   onPlayCard,
   onDealHand,
   onStartNewRound,
+  onVote,
 }) => {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isBlankCardDialogOpen, setIsBlankCardDialogOpen] =
@@ -59,43 +61,86 @@ const GameBoard: React.FC<GameBoardProps> = ({
         />
       </div>
 
-      <div className="flex flex-wrap justify-center gap-4 mb-8">
-        {hand.map((card) => (
-          <GameCard
-            key={card.id}
-            id={card.id}
-            content={card.content}
-            isPrompt={false}
-            isSelected={selectedCardId === card.id}
-            isBlank={card.isBlank}
-            onClick={selectCard}
-          />
-        ))}
-      </div>
-
       {gameState.gamePhase === "playing" && (
-        <div className="flex justify-center gap-4 mb-8">
-          <Button
-            onClick={playCard}
-            disabled={!selectedCardId}
-            className="px-8 py-2"
-          >
-            Play Card
-          </Button>
-          <Button onClick={onDealHand} variant="outline" className="px-8 py-2">
-            <Shuffle className="mr-2 h-4 w-4" /> New Hand
-          </Button>
+        <>
+          <div className="flex flex-wrap justify-center gap-4 mb-8">
+            {hand.map((card) => (
+              <GameCard
+                key={card.id}
+                id={card.id}
+                content={card.content}
+                isPrompt={false}
+                isSelected={selectedCardId === card.id}
+                isBlank={card.isBlank}
+                onClick={selectCard}
+              />
+            ))}
+          </div>
+
+          <div className="flex justify-center gap-4 mb-8">
+            <Button
+              onClick={playCard}
+              disabled={!selectedCardId}
+              className="px-8 py-2"
+            >
+              Play Card
+            </Button>
+            <Button
+              onClick={onDealHand}
+              variant="outline"
+              className="px-8 py-2"
+            >
+              <Shuffle className="mr-2 h-4 w-4" /> New Hand
+            </Button>
+          </div>
+        </>
+      )}
+
+      {gameState.gamePhase === "voting" && (
+        <div className="flex flex-wrap justify-center gap-4 mb-8">
+          {Object.entries(gameState.playedCards).map(([playerId, content]) => (
+            <div key={playerId} className="flex flex-col items-center">
+              <GameCard
+                id={playerId}
+                content={content}
+                isPrompt={false}
+                isSelected={false}
+                isBlank={false}
+                onClick={() => onVote(playerId)}
+              />
+              <Button
+                onClick={() => onVote(playerId)}
+                className="mt-2"
+                disabled={gameState.votes[playerId] !== undefined}
+              >
+                Vote
+              </Button>
+            </div>
+          ))}
         </div>
       )}
 
-      {gameState.gamePhase === "judging" &&
-        playerId === gameState.currentPlayerId && (
-          <div className="flex justify-center gap-4 mb-8">
-            <Button onClick={onStartNewRound} className="px-8 py-2">
+      {gameState.gamePhase === "roundEnd" && (
+        <div className="flex flex-col items-center mb-8">
+          <h2 className="text-2xl font-bold mb-4">Winner:</h2>
+          <GameCard
+            id={gameState.winner!}
+            content={gameState.playedCards[gameState.winner!]}
+            isPrompt={false}
+            isSelected={false}
+            isBlank={false}
+            onClick={() => {}}
+          />
+          <p className="mt-2 text-xl">
+            {gameState.players[gameState.winner!]} wins this round!
+          </p>
+          {playerId === gameState.currentPlayerId && (
+            <Button onClick={onStartNewRound} className="mt-4 px-8 py-2">
               Start New Round
             </Button>
-          </div>
-        )}
+          )}
+        </div>
+      )}
 
       <BlankCardDialog
         isOpen={isBlankCardDialogOpen}
