@@ -19,6 +19,7 @@ import {
   updateGameState,
   getGameState,
 } from "@/lib/actions/multiplayer-state";
+import { supabase } from "@/lib/supabase/client";
 
 // Define types
 interface GameState {
@@ -26,6 +27,9 @@ interface GameState {
   currentPrompt: string;
   currentPlayerId: string | null;
   playedCards: { [key: string]: string };
+  round: number;
+  gamePhase: "playing" | "judging" | "roundEnd";
+  winner: string | null; // Add this line
 }
 
 interface Card {
@@ -61,9 +65,12 @@ const RetrosAgainstHumanity: React.FC = () => {
   const [gameId, setGameId] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState>({
     players: {},
-    currentPrompt: "",
+    currentPrompt: promptCards[Math.floor(Math.random() * promptCards.length)],
     currentPlayerId: null,
     playedCards: {},
+    round: 0,
+    gamePhase: "playing",
+    winner: null,
   });
   const [playerName, setPlayerName] = useState<string>("");
   const [playerId, setPlayerId] = useState<string>("");
@@ -81,13 +88,64 @@ const RetrosAgainstHumanity: React.FC = () => {
       setGameId(gameIdParam);
       fetchGameState(gameIdParam);
     } else {
-      drawPromptCard();
+      createNewGame();
     }
   }, []);
+
+  useEffect(() => {
+    console.log("gameId", gameId);
+    if (gameId) {
+      const subscription = supabase
+        .channel(`games`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "games",
+            filter: `id=eq.${gameId}`,
+          },
+          (payload) => {
+            console.log("Received payload:", payload);
+            const newState = payload.new.state as GameState;
+            console.log("New state:", newState);
+            setGameState((prevState) => ({
+              ...prevState,
+              ...newState,
+            }));
+          }
+        )
+        .subscribe();
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, [gameId]);
 
   const fetchGameState = async (gameId: string) => {
     const state = await getGameState(gameId);
     setGameState(state);
+    if (playerId) {
+      dealHand();
+    }
+  };
+
+  const createNewGame = async () => {
+    const newGameState: GameState = {
+      players: {},
+      currentPrompt:
+        promptCards[Math.floor(Math.random() * promptCards.length)],
+      currentPlayerId: null,
+      playedCards: {},
+      round: 0,
+      gamePhase: "playing",
+      winner: null,
+    };
+    const newGameId = await createGame(newGameState);
+    setGameId(newGameId);
+    setGameState(newGameState);
+    window.history.replaceState(null, "", `?gameId=${newGameId}`);
   };
 
   const drawPromptCard = (): void => {
@@ -135,6 +193,16 @@ const RetrosAgainstHumanity: React.FC = () => {
         [playerId]: content,
       },
     };
+
+    // Check if all players have played their cards
+    if (
+      Object.keys(newState.playedCards).length ===
+        Object.keys(newState.players).length &&
+      Object.keys(newState.players).length > 1
+    ) {
+      newState.gamePhase = "judging";
+    }
+
     setGameState(newState);
     await updateGameState(gameId!, newState);
 
@@ -168,15 +236,37 @@ const RetrosAgainstHumanity: React.FC = () => {
         currentPlayerId: gameState.currentPlayerId || newPlayerId,
       };
       setGameState(newState);
-      if (!gameId) {
-        const newGameId = await createGame(newState);
-        setGameId(newGameId);
-        window.history.replaceState(null, "", `?gameId=${newGameId}`);
-      } else {
-        await updateGameState(gameId, newState);
-      }
+      await updateGameState(gameId!, newState);
       dealHand();
     }
+  };
+
+  const startNewRound = async (): Promise<void> => {
+    const newState: GameState = {
+      ...gameState,
+      round: gameState.round + 1,
+      gamePhase: "playing",
+      playedCards: {},
+      currentPrompt:
+        promptCards[Math.floor(Math.random() * promptCards.length)],
+      currentPlayerId: Object.keys(gameState.players)[
+        gameState.round % Object.keys(gameState.players).length
+      ],
+      winner: null,
+    };
+    setGameState(newState);
+    await updateGameState(gameId!, newState);
+    dealHand();
+  };
+
+  const selectWinner = async (winningPlayerId: string): Promise<void> => {
+    const newState: GameState = {
+      ...gameState,
+      gamePhase: "roundEnd",
+      winner: winningPlayerId,
+    };
+    setGameState(newState);
+    await updateGameState(gameId!, newState);
   };
 
   const getShareLink = (): string => {
@@ -237,25 +327,41 @@ const RetrosAgainstHumanity: React.FC = () => {
             ))}
           </div>
 
-          <div className="flex justify-center gap-4 mb-8">
-            <Button
-              onClick={playCard}
-              disabled={!selectedCardId}
-              className="px-8 py-2"
-            >
-              Play Card
-            </Button>
-            <Button onClick={dealHand} variant="outline" className="px-8 py-2">
-              <Shuffle className="mr-2 h-4 w-4" /> New Hand
-            </Button>
-            <Button
-              onClick={copyShareLink}
-              variant="outline"
-              className="px-8 py-2"
-            >
-              <Copy className="mr-2 h-4 w-4" /> Copy Share Link
-            </Button>
-          </div>
+          {gameState.gamePhase === "playing" && (
+            <div className="flex justify-center gap-4 mb-8">
+              <Button
+                onClick={playCard}
+                disabled={!selectedCardId}
+                className="px-8 py-2"
+              >
+                Play Card
+              </Button>
+              <Button
+                onClick={dealHand}
+                variant="outline"
+                className="px-8 py-2"
+              >
+                <Shuffle className="mr-2 h-4 w-4" /> New Hand
+              </Button>
+            </div>
+          )}
+
+          {gameState.gamePhase === "judging" &&
+            playerId === gameState.currentPlayerId && (
+              <div className="flex justify-center gap-4 mb-8">
+                <Button onClick={() => startNewRound()} className="px-8 py-2">
+                  Start New Round
+                </Button>
+              </div>
+            )}
+
+          <Button
+            onClick={copyShareLink}
+            variant="outline"
+            className="px-8 py-2 mb-8"
+          >
+            <Copy className="mr-2 h-4 w-4" /> Copy Share Link
+          </Button>
 
           {showAlert && (
             <Alert className="mb-8">
@@ -293,6 +399,23 @@ const RetrosAgainstHumanity: React.FC = () => {
                         {gameState.players[playerId]}:
                       </span>{" "}
                       {card}
+                      {gameState.gamePhase === "judging" &&
+                        playerId === gameState.currentPlayerId && (
+                          <Button
+                            onClick={() => selectWinner(playerId)}
+                            variant="outline"
+                            size="sm"
+                            className="ml-2"
+                          >
+                            Select Winner
+                          </Button>
+                        )}
+                      {gameState.gamePhase === "roundEnd" &&
+                        playerId === gameState.winner && (
+                          <span className="ml-2 text-green-600 font-bold">
+                            Winner!
+                          </span>
+                        )}
                     </div>
                   )
                 )}
@@ -332,5 +455,4 @@ const RetrosAgainstHumanity: React.FC = () => {
     </div>
   );
 };
-
 export default RetrosAgainstHumanity;

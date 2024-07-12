@@ -1,25 +1,23 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 export async function createGame(initialState: any) {
   const { data, error } = await supabase
-    .from("games")
-    .insert({ state: initialState })
-    .select()
+    .rpc("create_game", { initial_state: initialState })
     .single();
 
   if (error) throw error;
   revalidatePath("/");
-  return data.id;
+  return data;
 }
 
 export async function updateGameState(gameId: string, newState: any) {
-  const { error } = await supabase
-    .from("games")
-    .update({ state: newState })
-    .eq("id", gameId);
+  const { error } = await supabase.rpc("update_game_state", {
+    p_game_id: gameId,
+    p_new_state: newState,
+  });
 
   if (error) throw error;
   revalidatePath("/");
