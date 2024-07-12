@@ -136,7 +136,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
           <p className="mt-2 text-xl">
             {gameState.players[gameState.winner!]} wins this round!
           </p>
-          {playerId === gameState.currentPlayerId && (
+          {playerId === gameState.winner && (
             <Button onClick={onStartNewRound} className="mt-4 px-8 py-2">
               Start New Round
             </Button>
