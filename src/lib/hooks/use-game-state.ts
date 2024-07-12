@@ -47,7 +47,8 @@ export const useGameState = () => {
             filter: `id=eq.${gameId}`,
           },
           (payload) => {
-            const newState = payload.new.state as GameState;
+            const newState = (payload.new as { [key: string]: any })
+              .state as GameState;
             setGameState((prevState) => ({
               ...prevState,
               ...newState,
@@ -82,7 +83,7 @@ export const useGameState = () => {
       winner: null,
     };
     const newGameId = await createGame(newGameState);
-    setGameId(newGameId);
+    setGameId(newGameId as string);
     setGameState(newGameState);
     window.history.replaceState(null, "", `?gameId=${newGameId}`);
   };
