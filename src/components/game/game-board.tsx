@@ -98,25 +98,27 @@ const GameBoard: React.FC<GameBoardProps> = ({
 
       {gameState.gamePhase === "voting" && (
         <div className="flex flex-wrap justify-center gap-4 mb-8">
-          {Object.entries(gameState.playedCards).map(([playerId, content]) => (
-            <div key={playerId} className="flex flex-col items-center">
-              <GameCard
-                id={playerId}
-                content={content}
-                isPrompt={false}
-                isSelected={false}
-                isBlank={false}
-                onClick={() => onVote(playerId)}
-              />
-              <Button
-                onClick={() => onVote(playerId)}
-                className="mt-2"
-                disabled={gameState.votes[playerId] !== undefined}
-              >
-                Vote
-              </Button>
-            </div>
-          ))}
+          {Object.entries(gameState.playedCards).map(
+            ([cardPlayerId, content]) => (
+              <div key={cardPlayerId} className="flex flex-col items-center">
+                <GameCard
+                  id={cardPlayerId}
+                  content={content}
+                  isPrompt={false}
+                  isSelected={false}
+                  isBlank={false}
+                  onClick={() => onVote(cardPlayerId)}
+                />
+                <Button
+                  onClick={() => onVote(cardPlayerId)}
+                  className="mt-2"
+                  disabled={gameState.votes[playerId] !== undefined}
+                >
+                  Vote
+                </Button>
+              </div>
+            )
+          )}
         </div>
       )}
 
