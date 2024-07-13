@@ -1,4 +1,5 @@
-import { Edit } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
 interface GameCardProps {
   id: string;
@@ -9,14 +10,6 @@ interface GameCardProps {
   onClick: (id: string) => void;
 }
 
-import React, { HTMLAttributes } from "react";
-
-interface ExtendedDivProps extends HTMLAttributes<HTMLDivElement> {
-  xmlns?: string;
-}
-
-const ExtendedDiv: React.FC<ExtendedDivProps> = (props) => <div {...props} />;
-
 const GameCard: React.FC<GameCardProps> = ({
   id,
   content,
@@ -24,47 +17,56 @@ const GameCard: React.FC<GameCardProps> = ({
   isSelected,
   isBlank,
   onClick,
-}) => (
-  <div
-    className={`relative w-48 h-64 rounded-lg shadow-lg cursor-pointer transition-transform transform hover:scale-105 ${
-      isSelected ? "ring-4 ring-blue-500" : ""
-    }`}
-    onClick={() => onClick(id)}
-  >
-    <svg className="absolute inset-0" viewBox="0 0 192 256">
-      <rect
-        width="192"
-        height="256"
-        rx="16"
-        fill={isPrompt ? "#1a1a1a" : "#ffffff"}
-      />
-      <foreignObject x="16" y="16" width="160" height="224">
-        <ExtendedDiv xmlns="http://www.w3.org/1999/xhtml">
-          <p
-            className={`font-bold text-lg ${
-              isPrompt ? "text-white" : "text-black"
-            }`}
-          >
-            Retros Against Humanity
-          </p>
+}) => {
+  const [isNew, setIsNew] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsNew(false), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <motion.div
+      initial={isNew ? { scale: 0.8, opacity: 0 } : false}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className={`relative w-48 h-64 rounded-lg shadow-lg cursor-pointer transition-transform transform hover:scale-105 ${
+        isSelected ? "ring-4 ring-blue-500" : ""
+      }`}
+      onClick={() => onClick(id)}
+    >
+      <div
+        className={`absolute inset-0 ${
+          isPrompt
+            ? "bg-black text-white"
+            : "bg-gradient-to-br from-white to-gray-100 text-black"
+        } rounded-lg flex flex-col justify-between p-4 overflow-hidden`}
+      >
+        <div className="flex-grow flex items-center justify-center">
           {isBlank ? (
-            <div className="flex flex-col items-center justify-center h-full">
-              <p className="text-2xl font-bold text-black">[BLANK]</p>
-              <Edit className="mt-2" />
-            </div>
+            <span className="text-gray-400 font-semibold italic">
+              Blank Card
+            </span>
           ) : (
             <p
-              className={`mt-4 text-sm ${
-                isPrompt ? "text-white" : "text-black"
-              }`}
+              className={`text-left ${
+                isPrompt ? "text-lg" : "text-base"
+              } font-bold leading-tight`}
             >
               {content}
             </p>
           )}
-        </ExtendedDiv>
-      </foreignObject>
-    </svg>
-  </div>
-);
+        </div>
+        <div
+          className={`text-xs font-bold ${
+            isPrompt ? "text-white" : "text-gray-500"
+          } mt-2`}
+        >
+          {"Retros Against Humanity"}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 export default GameCard;
