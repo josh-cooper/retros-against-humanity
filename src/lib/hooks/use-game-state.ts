@@ -94,6 +94,15 @@ export const useGameState = () => {
     console.log("Dealing new hand with prevHand:", prevHand);
     const newHand: Card[] = [...prevHand];
 
+    const hasBlank = newHand.some((card) => card.isBlank);
+    if (!hasBlank) {
+      newHand.push({
+        id: Math.random().toString(36).substr(2, 9),
+        content: "[BLANK]",
+        isBlank: true,
+      });
+    }
+
     const numCardsToAdd = 5 - newHand.length;
 
     console.log("numCardsToAdd", numCardsToAdd);
@@ -127,12 +136,12 @@ export const useGameState = () => {
     dealHand([]);
   };
 
-  const playCard = async (content: string): Promise<void> => {
+  const playCard = async (playedCard: Card): Promise<void> => {
     const newState = {
       ...gameState,
       playedCards: {
         ...gameState.playedCards,
-        [playerId]: content,
+        [playerId]: playedCard.content,
       },
     };
 
@@ -148,7 +157,7 @@ export const useGameState = () => {
     setGameState(newState);
     await updateGameState(gameId!, newState);
 
-    const newHand = hand.filter((card) => card.content !== content);
+    const newHand = hand.filter((card) => card.id !== playedCard.id);
     setHand(newHand);
 
     if (newHand.length < 3) {

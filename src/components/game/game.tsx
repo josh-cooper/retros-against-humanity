@@ -50,7 +50,7 @@ const RetrosAgainstHumanity: React.FC = () => {
             hand={hand}
             playerId={playerId}
             onPlayCard={playCard}
-            onDealHand={dealHand}
+            onDealHand={() => dealHand([])}
             onStartNewRound={startNewRound}
             onVote={vote}
           />

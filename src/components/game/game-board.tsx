@@ -9,7 +9,7 @@ interface GameBoardProps {
   gameState: GameState;
   hand: Card[];
   playerId: string;
-  onPlayCard: (content: string) => void;
+  onPlayCard: (playedCard: Card) => void;
   onDealHand: () => void;
   onStartNewRound: () => void;
   onVote: (votedPlayerId: string) => void;
@@ -38,13 +38,18 @@ const GameBoard: React.FC<GameBoardProps> = ({
       if (selectedCard && selectedCard.isBlank) {
         setIsBlankCardDialogOpen(true);
       } else if (selectedCard) {
-        onPlayCard(selectedCard.content);
+        onPlayCard(selectedCard);
       }
     }
   };
 
   const handleBlankCardSubmit = (content: string): void => {
-    onPlayCard(content);
+    const newCard: Card = {
+      id: selectedCardId!,
+      content: content,
+      isBlank: true,
+    };
+    onPlayCard(newCard);
     setIsBlankCardDialogOpen(false);
   };
 
