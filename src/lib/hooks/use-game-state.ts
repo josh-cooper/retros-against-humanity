@@ -68,7 +68,7 @@ export const useGameState = () => {
     const state = await getGameState(gameId);
     setGameState(state);
     if (playerId) {
-      dealHand();
+      dealHand([]);
     }
   };
 
@@ -90,9 +90,15 @@ export const useGameState = () => {
     window.history.replaceState(null, "", `?gameId=${newGameId}`);
   };
 
-  const dealHand = (): void => {
-    const newHand: Card[] = [];
-    for (let i = 0; i < 5; i++) {
+  const dealHand = (prevHand: Card[]): void => {
+    console.log("Dealing new hand with prevHand:", prevHand);
+    const newHand: Card[] = [...prevHand];
+
+    const numCardsToAdd = 5 - newHand.length;
+
+    console.log("numCardsToAdd", numCardsToAdd);
+
+    for (let i = 0; i < numCardsToAdd; i++) {
       const randomIndex = Math.floor(Math.random() * answerCards.length);
       const content = answerCards[randomIndex];
       newHand.push({
@@ -118,7 +124,7 @@ export const useGameState = () => {
     };
     setGameState(newState);
     await updateGameState(gameId!, newState);
-    dealHand();
+    dealHand([]);
   };
 
   const playCard = async (content: string): Promise<void> => {
@@ -146,7 +152,7 @@ export const useGameState = () => {
     setHand(newHand);
 
     if (newHand.length < 3) {
-      dealHand();
+      dealHand(newHand);
     }
   };
 
@@ -198,7 +204,6 @@ export const useGameState = () => {
     };
     setGameState(newState);
     await updateGameState(gameId!, newState);
-    dealHand();
   };
 
   return {
