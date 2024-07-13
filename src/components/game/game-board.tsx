@@ -153,6 +153,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
         isOpen={isBlankCardDialogOpen}
         onClose={() => setIsBlankCardDialogOpen(false)}
         onSubmit={handleBlankCardSubmit}
+        prompt={gameState.currentPrompt}
       />
     </>
   );

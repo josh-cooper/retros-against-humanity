@@ -1,10 +1,14 @@
 import "server-only";
 import { Anthropic } from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 export async function chatCompletion(
   promptText: string,
   validateResponse?: (text: string) => boolean,
@@ -54,4 +58,14 @@ export async function chatCompletion(
   throw new Error(
     "Failed to get a valid response from Claude Haiku after exhausting all retries"
   );
+}
+
+export async function moderationResponse(text: string): Promise<boolean> {
+  try {
+    const response = await openai.moderations.create({ input: text });
+    return !response.results[0].flagged;
+  } catch (error) {
+    console.error("Error calling OpenAI moderation API:", error);
+    return false; // Assume unsafe if there's an error
+  }
 }

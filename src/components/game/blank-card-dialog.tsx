@@ -8,24 +8,44 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useMutation } from "@tanstack/react-query";
+import { moderateContent } from "@/lib/actions/moderate";
 
 interface BlankCardDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (content: string) => void;
+  prompt: string;
 }
 
 const BlankCardDialog: React.FC<BlankCardDialogProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  prompt,
 }) => {
   const [blankCardContent, setBlankCardContent] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+
+  const moderationMutation = useMutation({
+    mutationFn: (content: string) => moderateContent(prompt, content),
+    onSuccess: (isSafe) => {
+      if (isSafe) {
+        onSubmit(blankCardContent);
+        setBlankCardContent("");
+        setError(null);
+      } else {
+        setError("Your answer didn't pass moderation. Please try again.");
+      }
+    },
+    onError: () => {
+      setError("An error occurred. Please try again.");
+    },
+  });
 
   const handleSubmit = () => {
     if (blankCardContent.trim() !== "") {
-      onSubmit(blankCardContent);
-      setBlankCardContent("");
+      moderationMutation.mutate(blankCardContent);
     }
   };
 
@@ -43,11 +63,17 @@ const BlankCardDialog: React.FC<BlankCardDialogProps> = ({
             setBlankCardContent(e.target.value)
           }
         />
+        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         <DialogFooter>
           <Button onClick={onClose} variant="outline">
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>Submit</Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={moderationMutation.isPending}
+          >
+            {moderationMutation.isPending ? "Submitting..." : "Submit"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
