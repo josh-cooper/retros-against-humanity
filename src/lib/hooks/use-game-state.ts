@@ -122,6 +122,10 @@ export const useGameState = () => {
     const newPlayerId = Math.random().toString(36).substr(2, 9);
     setPlayerId(newPlayerId);
     setPlayerName(name);
+
+    // Optimistically deal the initial hand
+    dealHand([]);
+
     const newState = {
       ...gameState,
       players: {
@@ -132,7 +136,6 @@ export const useGameState = () => {
     };
     setGameState(newState);
     await updateGameState(gameId!, newState);
-    dealHand([]);
   };
 
   const playCard = async (playedCard: Card): Promise<void> => {
