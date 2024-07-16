@@ -14,7 +14,7 @@ export async function suggestDiscussionTopics(
   answer: string
 ): Promise<string[]> {
   const promptText = suggestDiscussionTopicsPrompt(prompt, answer);
-  const result = await chatCompletion(promptText);
+  const result = await chatCompletion(promptText, validateDiscussionTopics);
   return result
     .split("\n")
     .map((line) => line.trim())

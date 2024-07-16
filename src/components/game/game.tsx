@@ -21,6 +21,7 @@ const RetrosAgainstHumanity: React.FC = () => {
     dealHand,
     startNewRound,
     vote,
+    discussionTopics,
   } = useGameState();
 
   const [showAlert, setShowAlert] = useState<boolean>(false);
@@ -53,6 +54,7 @@ const RetrosAgainstHumanity: React.FC = () => {
             onDealHand={() => dealHand([])}
             onStartNewRound={startNewRound}
             onVote={vote}
+            discussionTopics={discussionTopics}
           />
 
           <Button

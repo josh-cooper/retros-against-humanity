@@ -7,6 +7,7 @@ import {
   getGameState,
 } from "@/lib/actions/multiplayer-state";
 import { supabase } from "@/lib/supabase/client";
+import { suggestDiscussionTopics } from "../actions/suggest";
 
 export const useGameState = () => {
   const [gameId, setGameId] = useState<string | null>(null);
@@ -23,6 +24,7 @@ export const useGameState = () => {
   const [playerName, setPlayerName] = useState<string>("");
   const [playerId, setPlayerId] = useState<string>("");
   const [hand, setHand] = useState<Card[]>([]);
+  const [discussionTopics, setDiscussionTopics] = useState<string[]>([]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -91,7 +93,6 @@ export const useGameState = () => {
   };
 
   const dealHand = (prevHand: Card[]): void => {
-    console.log("Dealing new hand with prevHand:", prevHand);
     const newHand: Card[] = [...prevHand];
 
     const hasBlank = newHand.some((card) => card.isBlank);
@@ -104,8 +105,6 @@ export const useGameState = () => {
     }
 
     const numCardsToAdd = 5 - newHand.length;
-
-    console.log("numCardsToAdd", numCardsToAdd);
 
     for (let i = 0; i < numCardsToAdd; i++) {
       const randomIndex = Math.floor(Math.random() * answerCards.length);
@@ -180,21 +179,33 @@ export const useGameState = () => {
       Object.keys(newState.players).length
     ) {
       newState.gamePhase = "roundEnd";
-      newState.winner = determineWinner(newState.votes);
+      newState.winner = await determineWinner(newState.votes);
     }
 
     setGameState(newState);
     await updateGameState(gameId!, newState);
   };
 
-  const determineWinner = (votes: Record<string, string>): string => {
+  const determineWinner = async (
+    votes: Record<string, string>
+  ): Promise<string> => {
     const voteCounts: Record<string, number> = {};
     Object.values(votes).forEach((votedPlayerId) => {
       voteCounts[votedPlayerId] = (voteCounts[votedPlayerId] || 0) + 1;
     });
-    return Object.entries(voteCounts).reduce((a, b) =>
+    const winnerId = Object.entries(voteCounts).reduce((a, b) =>
       a[1] > b[1] ? a : b
     )[0];
+
+    // Get discussion topics for the winning answer
+    const winningAnswer = gameState.playedCards[winnerId];
+    const topics = await suggestDiscussionTopics(
+      gameState.currentPrompt,
+      winningAnswer
+    );
+    setDiscussionTopics(topics);
+
+    return winnerId;
   };
 
   const startNewRound = async (): Promise<void> => {
@@ -225,6 +236,7 @@ export const useGameState = () => {
     playCard,
     dealHand,
     startNewRound,
-    vote, // Add this line to expose the vote function
+    vote,
+    discussionTopics,
   };
 };

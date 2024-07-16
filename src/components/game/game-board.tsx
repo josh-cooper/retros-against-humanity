@@ -13,6 +13,7 @@ interface GameBoardProps {
   onDealHand: () => void;
   onStartNewRound: () => void;
   onVote: (votedPlayerId: string) => void;
+  discussionTopics: string[];
 }
 
 const GameBoard: React.FC<GameBoardProps> = ({
@@ -23,6 +24,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   onDealHand,
   onStartNewRound,
   onVote,
+  discussionTopics,
 }) => {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isBlankCardDialogOpen, setIsBlankCardDialogOpen] =
@@ -141,6 +143,18 @@ const GameBoard: React.FC<GameBoardProps> = ({
           <p className="mt-2 text-xl">
             {gameState.players[gameState.winner!]} wins this round!
           </p>
+          {discussionTopics.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-xl font-semibold mb-2">
+                Discussion Suggestions:
+              </h3>
+              <ul className="list-disc list-inside">
+                {discussionTopics.map((topic, index) => (
+                  <li key={index}>{topic}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           {playerId === gameState.winner && (
             <Button onClick={onStartNewRound} className="mt-4 px-8 py-2">
               Start New Round
