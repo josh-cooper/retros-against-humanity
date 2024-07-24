@@ -11,15 +11,18 @@ import { AlertCircle } from "lucide-react";
 export default function StartNewGameButton() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const createGameMutation = useMutation({
     mutationFn: createNewGame,
     onSuccess: (gameId) => {
+      setIsRedirecting(true);
       router.push(`/game/${gameId}`);
     },
     onError: (error) => {
       console.error("Failed to create new game:", error);
       setError("Failed to create a new game. Please try again.");
+      setIsRedirecting(false);
     },
   });
 
@@ -28,14 +31,16 @@ export default function StartNewGameButton() {
     createGameMutation.mutate();
   };
 
+  const isLoading = createGameMutation.isPending || isRedirecting;
+
   return (
     <>
       <Button
         onClick={handleStartGame}
-        disabled={createGameMutation.isPending}
+        disabled={isLoading}
         className="px-8 py-3 text-lg font-semibold bg-gray-800 hover:bg-gray-700 text-white rounded-lg shadow-md transition duration-300 ease-in-out"
       >
-        {createGameMutation.isPending ? "Creating Game..." : "Start New Game"}
+        {isLoading ? "Creating Game..." : "Start New Game"}
       </Button>
       {error && (
         <Alert variant="destructive" className="mt-4">
