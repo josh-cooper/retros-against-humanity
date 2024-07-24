@@ -45,33 +45,51 @@ export const useGameState = (gameId: string) => {
 
   // Supabase real-time subscription
   useEffect(() => {
-    if (gameId) {
-      const subscription = supabase
-        .channel(`games`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "games",
-            filter: `id=eq.${gameId}`,
-          },
-          (payload) => {
-            const newState = (payload.new as { [key: string]: any })
-              .state as GameState;
-            queryClient.setQueryData<GameState>(
-              ["gameState", gameId],
-              newState
-            );
-          }
-        )
-        .subscribe();
+    if (!gameId) return;
 
-      return () => {
-        subscription.unsubscribe();
-      };
+    const subscription = supabase
+      .channel(`games`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "games",
+          filter: `id=eq.${gameId}`,
+        },
+        (payload) => {
+          const newState = (payload.new as { [key: string]: any })
+            .state as GameState;
+          handleNewGameState(newState);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [gameId, queryClient, playerId]);
+
+  const handleNewGameState = async (newState: GameState) => {
+    queryClient.setQueryData<GameState>(["gameState", gameId], newState);
+
+    if (isRoundEndedAndPlayerWon(newState)) {
+      await fetchAndSetDiscussionTopics(newState);
     }
-  }, [gameId, queryClient]);
+  };
+
+  const isRoundEndedAndPlayerWon = (state: GameState): boolean => {
+    return state.gamePhase === "roundEnd" && state.winner === playerId;
+  };
+
+  const fetchAndSetDiscussionTopics = async (state: GameState) => {
+    const winningAnswer = state.playedCards[playerId];
+    const topics = await suggestDiscussionTopics(
+      state.currentPrompt,
+      winningAnswer
+    );
+    setDiscussionTopics(topics);
+  };
 
   const dealHand = (prevHand: Card[]): void => {
     const newHand = fillHand(prevHand);
@@ -139,45 +157,21 @@ export const useGameState = (gameId: string) => {
 
     if (allPlayersVoted) {
       newState.gamePhase = "roundEnd";
-      // Optimistically set a temporary winner
-      newState.winner = votedPlayerId;
+      newState.winner = determineWinner(newState.votes);
     }
 
-    // Optimistically update the state
+    // Update the state
     updateGameStateMutation.mutate(newState);
-
-    // If all players have voted, determine the actual winner
-    if (allPlayersVoted) {
-      const actualWinner = await determineWinner(newState.votes);
-      if (actualWinner !== votedPlayerId) {
-        // If the actual winner is different from the optimistic guess, update again
-        updateGameStateMutation.mutate({
-          ...newState,
-          winner: actualWinner,
-        });
-      }
-    }
   };
 
-  const determineWinner = async (
-    votes: Record<string, string>
-  ): Promise<string> => {
+  const determineWinner = (votes: Record<string, string>): string => {
     const voteCounts: Record<string, number> = {};
     Object.values(votes).forEach((votedPlayerId) => {
       voteCounts[votedPlayerId] = (voteCounts[votedPlayerId] || 0) + 1;
     });
-    const winnerId = Object.entries(voteCounts).reduce((a, b) =>
+    return Object.entries(voteCounts).reduce((a, b) =>
       a[1] > b[1] ? a : b
     )[0];
-
-    const winningAnswer = gameState!.playedCards[winnerId];
-    const topics = await suggestDiscussionTopics(
-      gameState!.currentPrompt,
-      winningAnswer
-    );
-    setDiscussionTopics(topics);
-
-    return winnerId;
   };
 
   const startNewRound = async (): Promise<void> => {
