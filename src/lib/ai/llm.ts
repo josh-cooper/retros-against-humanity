@@ -22,7 +22,7 @@ export async function chatCompletion(
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const response = await openai.chat.completions.create({
-        model: "claude-3-haiku-20240307",
+        model: "gpt-4o-mini",
         max_tokens: 1000,
         messages: [
           {

@@ -1,19 +1,14 @@
 import { useState, useEffect } from "react";
 import { GameState, Card } from "@/types/game";
-import { promptCards, answerCards } from "@/lib/cards";
-import {
-  createGame,
-  updateGameState,
-  getGameState,
-} from "@/lib/actions/multiplayer-state";
+import { updateGameState, getGameState } from "@/lib/actions/multiplayer-state";
 import { supabase } from "@/lib/supabase/client";
 import { suggestDiscussionTopics } from "../actions/suggest";
+import { fillHand, getPromptCard } from "../deck";
 
-export const useGameState = () => {
-  const [gameId, setGameId] = useState<string | null>(null);
+export const useGameState = (gameId: string) => {
   const [gameState, setGameState] = useState<GameState>({
     players: {},
-    currentPrompt: promptCards[Math.floor(Math.random() * promptCards.length)],
+    currentPrompt: "",
     currentPlayerId: null,
     playedCards: {},
     round: 0,
@@ -27,15 +22,8 @@ export const useGameState = () => {
   const [discussionTopics, setDiscussionTopics] = useState<string[]>([]);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const gameIdParam = urlParams.get("gameId");
-    if (gameIdParam) {
-      setGameId(gameIdParam);
-      fetchGameState(gameIdParam);
-    } else {
-      createNewGame();
-    }
-  }, []);
+    fetchGameState(gameId);
+  }, [gameId]);
 
   useEffect(() => {
     if (gameId) {
@@ -74,47 +62,8 @@ export const useGameState = () => {
     }
   };
 
-  const createNewGame = async () => {
-    const newGameState: GameState = {
-      players: {},
-      currentPrompt:
-        promptCards[Math.floor(Math.random() * promptCards.length)],
-      currentPlayerId: null,
-      playedCards: {},
-      round: 0,
-      gamePhase: "playing",
-      winner: null,
-      votes: {},
-    };
-    const newGameId = await createGame(newGameState);
-    setGameId(newGameId as string);
-    setGameState(newGameState);
-    window.history.replaceState(null, "", `?gameId=${newGameId}`);
-  };
-
   const dealHand = (prevHand: Card[]): void => {
-    const newHand: Card[] = [...prevHand];
-
-    const hasBlank = newHand.some((card) => card.isBlank);
-    if (!hasBlank) {
-      newHand.push({
-        id: Math.random().toString(36).substr(2, 9),
-        content: "[BLANK]",
-        isBlank: true,
-      });
-    }
-
-    const numCardsToAdd = 5 - newHand.length;
-
-    for (let i = 0; i < numCardsToAdd; i++) {
-      const randomIndex = Math.floor(Math.random() * answerCards.length);
-      const content = answerCards[randomIndex];
-      newHand.push({
-        id: Math.random().toString(36).substr(2, 9),
-        content: content,
-        isBlank: content === "[BLANK]",
-      });
-    }
+    const newHand = fillHand(prevHand);
     setHand(newHand);
   };
 
@@ -217,8 +166,7 @@ export const useGameState = () => {
       round: gameState.round + 1,
       gamePhase: "playing",
       playedCards: {},
-      currentPrompt:
-        promptCards[Math.floor(Math.random() * promptCards.length)],
+      currentPrompt: getPromptCard(),
       currentPlayerId: Object.keys(gameState.players)[
         gameState.round % Object.keys(gameState.players).length
       ],
@@ -230,7 +178,6 @@ export const useGameState = () => {
   };
 
   return {
-    gameId,
     gameState,
     playerId,
     playerName,

@@ -2,8 +2,10 @@
 
 import { supabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { getPromptCard } from "../deck";
+import { GameState } from "@/types/game";
 
-export async function createGame(initialState: any) {
+async function postNewGame(initialState: any) {
   const { data, error } = await supabase
     .rpc("create_game", { initial_state: initialState })
     .single();
@@ -11,6 +13,22 @@ export async function createGame(initialState: any) {
   if (error) throw error;
   revalidatePath("/");
   return data;
+}
+
+export async function createNewGame() {
+  const initialState: GameState = {
+    players: {},
+    currentPrompt: getPromptCard(),
+    currentPlayerId: null,
+    playedCards: {},
+    round: 0,
+    gamePhase: "playing",
+    winner: null,
+    votes: {},
+  };
+
+  const newGameId = await postNewGame(initialState);
+  return newGameId;
 }
 
 export async function updateGameState(gameId: string, newState: any) {

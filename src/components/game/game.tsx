@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Copy } from "lucide-react";
@@ -9,12 +9,10 @@ import PlayerJoin from "./player-join";
 import GameInfo from "./game-info";
 import { useGameState } from "@/lib/hooks/use-game-state";
 
-const RetrosAgainstHumanity: React.FC = () => {
+const RetrosAgainstHumanity: React.FC<{ gameId: string }> = ({ gameId }) => {
   const {
-    gameId,
     gameState,
     playerId,
-    playerName,
     hand,
     joinGame,
     playCard,
@@ -22,7 +20,7 @@ const RetrosAgainstHumanity: React.FC = () => {
     startNewRound,
     vote,
     discussionTopics,
-  } = useGameState();
+  } = useGameState(gameId);
 
   const [showAlert, setShowAlert] = useState<boolean>(false);
 
