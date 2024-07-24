@@ -1,12 +1,15 @@
 # Retros Against Humanity
 
-Retros Against Humanity is a fun and engaging multiplayer game that puts a twist on traditional retrospectives. It combines the humor of "Cards Against Humanity" with the productivity of Agile retrospectives, creating a unique and entertaining way for teams to reflect on their work.
+Retros Against Humanity is a fun and engaging multiplayer game that puts a twist on traditional retrospectives. It combines the rules of "Cards Against Humanity" with the productivity of Agile retrospectives, creating a unique and entertaining way for teams to reflect on their work.
+
+Each round users vote on a winner, who is then in charge of leading a discussion on based the prompt and the card they played.
 
 ## Features
 
 - Multiplayer gameplay
 - Real-time updates using Supabase
 - Optimistic local updates with React Query
+- AI moderation and discussion suggestions
 - React-based user interface with Next.js
 - Tailwind CSS for styling
 - Framer Motion for smooth animations
@@ -52,3 +55,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is private and not open for public use or distribution.
+
+## Try It Out
+
+You can try out Retros Against Humanity at [https://retros-against-humanity.vercel.app/](https://retros-against-humanity.vercel.app/)
