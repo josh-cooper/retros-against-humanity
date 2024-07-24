@@ -8,8 +8,9 @@ Each round users vote on a winner, who is then in charge of leading a discussion
 
 - Multiplayer gameplay
 - Real-time updates using Supabase
-- Optimistic local updates with React Query
+- Optimistic local updates with TanStack Query
 - AI moderation and discussion suggestions
+- Observability with langsmith
 - React-based user interface with Next.js
 - Tailwind CSS for styling
 - Framer Motion for smooth animations
@@ -36,7 +37,10 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 - React 18
 - Supabase for real-time database and authentication
 - TanStack Query for data fetching and state management
+- GPT-4o and Claude Haiku for LLM stuff
+- Langsmith for observability and offline eval
 - Tailwind CSS for styling
+- Shadcn for UI components
 - Framer Motion for animations
 - TypeScript for type-safe code
 
