@@ -10,6 +10,7 @@ Each round users vote on a winner, who is then in charge of leading a discussion
 - Real-time updates using Supabase
 - Optimistic local updates with React Query
 - AI moderation and discussion suggestions
+- Observability with langsmith
 - React-based user interface with Next.js
 - Tailwind CSS for styling
 - Framer Motion for smooth animations
