@@ -42,7 +42,7 @@ const RetrosAgainstHumanity: React.FC<{ gameId: string }> = ({ gameId }) => {
 
       {!playerId ? (
         <PlayerJoin onJoin={joinGame} />
-      ) : (
+      ) : gameState ? (
         <>
           <GameBoard
             gameState={gameState}
@@ -77,6 +77,8 @@ const RetrosAgainstHumanity: React.FC<{ gameId: string }> = ({ gameId }) => {
             onSelectWinner={vote}
           />
         </>
+      ) : (
+        <p>Loading game state...</p>
       )}
     </div>
   );
