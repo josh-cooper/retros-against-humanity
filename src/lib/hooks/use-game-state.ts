@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { GameState, Card } from "@/types/game";
 import { updateGameState, getGameState } from "@/lib/actions/multiplayer-state";
 import { supabase } from "@/lib/supabase/client";
@@ -6,25 +7,43 @@ import { suggestDiscussionTopics } from "../actions/suggest";
 import { fillHand, getPromptCard } from "../deck";
 
 export const useGameState = (gameId: string) => {
-  const [gameState, setGameState] = useState<GameState>({
-    players: {},
-    currentPrompt: "",
-    currentPlayerId: null,
-    playedCards: {},
-    round: 0,
-    gamePhase: "playing",
-    winner: null,
-    votes: {},
-  });
+  const queryClient = useQueryClient();
   const [playerName, setPlayerName] = useState<string>("");
   const [playerId, setPlayerId] = useState<string>("");
   const [hand, setHand] = useState<Card[]>([]);
   const [discussionTopics, setDiscussionTopics] = useState<string[]>([]);
 
-  useEffect(() => {
-    fetchGameState(gameId);
-  }, [gameId]);
+  // Query for game state
+  const { data: gameState } = useQuery<GameState>({
+    queryKey: ["gameState", gameId],
+    queryFn: () => getGameState(gameId),
+    enabled: !!gameId,
+  });
 
+  // Mutation for updating game state
+  const updateGameStateMutation = useMutation({
+    mutationFn: (newState: GameState) => updateGameState(gameId, newState),
+    onMutate: async (newState) => {
+      await queryClient.cancelQueries({ queryKey: ["gameState", gameId] });
+      const previousState = queryClient.getQueryData<GameState>([
+        "gameState",
+        gameId,
+      ]);
+      queryClient.setQueryData<GameState>(["gameState", gameId], newState);
+      return { previousState };
+    },
+    onError: (err, newState, context) => {
+      queryClient.setQueryData<GameState>(
+        ["gameState", gameId],
+        context?.previousState
+      );
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["gameState", gameId] });
+    },
+  });
+
+  // Supabase real-time subscription
   useEffect(() => {
     if (gameId) {
       const subscription = supabase
@@ -40,10 +59,10 @@ export const useGameState = (gameId: string) => {
           (payload) => {
             const newState = (payload.new as { [key: string]: any })
               .state as GameState;
-            setGameState((prevState) => ({
-              ...prevState,
-              ...newState,
-            }));
+            queryClient.setQueryData<GameState>(
+              ["gameState", gameId],
+              newState
+            );
           }
         )
         .subscribe();
@@ -52,15 +71,7 @@ export const useGameState = (gameId: string) => {
         subscription.unsubscribe();
       };
     }
-  }, [gameId]);
-
-  const fetchGameState = async (gameId: string) => {
-    const state = await getGameState(gameId);
-    setGameState(state);
-    if (playerId) {
-      dealHand([]);
-    }
-  };
+  }, [gameId, queryClient]);
 
   const dealHand = (prevHand: Card[]): void => {
     const newHand = fillHand(prevHand);
@@ -72,31 +83,28 @@ export const useGameState = (gameId: string) => {
     setPlayerId(newPlayerId);
     setPlayerName(name);
 
-    // Optimistically deal the initial hand
     dealHand([]);
 
     const newState = {
-      ...gameState,
+      ...gameState!,
       players: {
-        ...gameState.players,
+        ...gameState!.players,
         [newPlayerId]: name,
       },
-      currentPlayerId: gameState.currentPlayerId || newPlayerId,
+      currentPlayerId: gameState!.currentPlayerId || newPlayerId,
     };
-    setGameState(newState);
-    await updateGameState(gameId!, newState);
+    updateGameStateMutation.mutate(newState);
   };
 
   const playCard = async (playedCard: Card): Promise<void> => {
     const newState = {
-      ...gameState,
+      ...gameState!,
       playedCards: {
-        ...gameState.playedCards,
+        ...gameState!.playedCards,
         [playerId]: playedCard.content,
       },
     };
 
-    // Check if all players have played their cards
     if (
       Object.keys(newState.playedCards).length ===
         Object.keys(newState.players).length &&
@@ -105,8 +113,7 @@ export const useGameState = (gameId: string) => {
       newState.gamePhase = "voting";
     }
 
-    setGameState(newState);
-    await updateGameState(gameId!, newState);
+    updateGameStateMutation.mutate(newState);
 
     const newHand = hand.filter((card) => card.id !== playedCard.id);
     setHand(newHand);
@@ -118,24 +125,38 @@ export const useGameState = (gameId: string) => {
 
   const vote = async (votedPlayerId: string): Promise<void> => {
     const newState = {
-      ...gameState,
+      ...gameState!,
       votes: {
-        ...gameState.votes,
+        ...gameState!.votes,
         [playerId]: votedPlayerId,
       },
     };
 
-    // Check if all players have voted
-    if (
+    // Check if this vote completes the voting phase
+    const allPlayersVoted =
       Object.keys(newState.votes).length ===
-      Object.keys(newState.players).length
-    ) {
+      Object.keys(newState.players).length;
+
+    if (allPlayersVoted) {
       newState.gamePhase = "roundEnd";
-      newState.winner = await determineWinner(newState.votes);
+      // Optimistically set a temporary winner
+      newState.winner = votedPlayerId;
     }
 
-    setGameState(newState);
-    await updateGameState(gameId!, newState);
+    // Optimistically update the state
+    updateGameStateMutation.mutate(newState);
+
+    // If all players have voted, determine the actual winner
+    if (allPlayersVoted) {
+      const actualWinner = await determineWinner(newState.votes);
+      if (actualWinner !== votedPlayerId) {
+        // If the actual winner is different from the optimistic guess, update again
+        updateGameStateMutation.mutate({
+          ...newState,
+          winner: actualWinner,
+        });
+      }
+    }
   };
 
   const determineWinner = async (
@@ -149,10 +170,9 @@ export const useGameState = (gameId: string) => {
       a[1] > b[1] ? a : b
     )[0];
 
-    // Get discussion topics for the winning answer
-    const winningAnswer = gameState.playedCards[winnerId];
+    const winningAnswer = gameState!.playedCards[winnerId];
     const topics = await suggestDiscussionTopics(
-      gameState.currentPrompt,
+      gameState!.currentPrompt,
       winningAnswer
     );
     setDiscussionTopics(topics);
@@ -162,19 +182,18 @@ export const useGameState = (gameId: string) => {
 
   const startNewRound = async (): Promise<void> => {
     const newState: GameState = {
-      ...gameState,
-      round: gameState.round + 1,
+      ...gameState!,
+      round: gameState!.round + 1,
       gamePhase: "playing",
       playedCards: {},
       currentPrompt: getPromptCard(),
-      currentPlayerId: Object.keys(gameState.players)[
-        gameState.round % Object.keys(gameState.players).length
+      currentPlayerId: Object.keys(gameState!.players)[
+        gameState!.round % Object.keys(gameState!.players).length
       ],
       winner: null,
-      votes: {}, // Reset votes for the new round
+      votes: {},
     };
-    setGameState(newState);
-    await updateGameState(gameId!, newState);
+    updateGameStateMutation.mutate(newState);
   };
 
   return {
