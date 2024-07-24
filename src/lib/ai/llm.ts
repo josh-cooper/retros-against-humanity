@@ -1,14 +1,19 @@
 import "server-only";
 import { Anthropic } from "@anthropic-ai/sdk";
 import OpenAI from "openai";
+import { traceable } from "langsmith/traceable";
+import { wrapOpenAI } from "langsmith/wrappers";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = wrapOpenAI(
+  new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  })
+);
+
 export async function chatCompletion(
   promptText: string,
   validateResponse?: (text: string) => boolean,
@@ -16,7 +21,7 @@ export async function chatCompletion(
 ): Promise<string> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const response = await anthropic.messages.create({
+      const response = await openai.chat.completions.create({
         model: "claude-3-haiku-20240307",
         max_tokens: 1000,
         messages: [
@@ -32,10 +37,7 @@ export async function chatCompletion(
         ],
       });
 
-      const result =
-        response.content[0].type === "text"
-          ? response.content[0].text.trim()
-          : "";
+      const result = response.choices[0].message.content || "";
 
       if (!validateResponse || validateResponse(result)) {
         return result;
@@ -49,14 +51,14 @@ export async function chatCompletion(
       );
       if (attempt === maxRetries - 1) {
         throw new Error(
-          "Failed to get a valid response from Claude Haiku after multiple attempts"
+          "Failed to get a valid response from GPT-4o-mini after multiple attempts"
         );
       }
     }
   }
 
   throw new Error(
-    "Failed to get a valid response from Claude Haiku after exhausting all retries"
+    "Failed to get a valid response from GPT-4o-mini after exhausting all retries"
   );
 }
 

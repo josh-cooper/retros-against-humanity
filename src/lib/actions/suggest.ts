@@ -2,6 +2,7 @@
 
 import { chatCompletion } from "@/lib/ai/llm";
 import { suggestDiscussionTopicsPrompt } from "@/lib/ai/prompts";
+import { traceable } from "langsmith/traceable";
 
 function validateDiscussionTopics(text: string): boolean {
   const lines = text.trim().split("\n");
@@ -9,7 +10,7 @@ function validateDiscussionTopics(text: string): boolean {
   return validLines.length >= 2 && validLines.length <= 3;
 }
 
-export async function suggestDiscussionTopics(
+export const suggestDiscussionTopics = traceable(async function (
   prompt: string,
   answer: string
 ): Promise<string[]> {
@@ -20,4 +21,4 @@ export async function suggestDiscussionTopics(
     .map((line) => line.trim())
     .filter((line) => line.startsWith("-"))
     .map((line) => line.slice(1).trim());
-}
+});
