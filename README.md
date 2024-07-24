@@ -40,6 +40,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 - GPT-4o and Claude Haiku for LLM stuff
 - Langsmith for observability and offline eval
 - Tailwind CSS for styling
+- Shadcn for UI components
 - Framer Motion for animations
 - TypeScript for type-safe code
 
