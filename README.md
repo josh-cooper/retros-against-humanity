@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Retros Against Humanity
+
+Retros Against Humanity is a fun and engaging multiplayer game that puts a twist on traditional retrospectives. It combines the humor of "Cards Against Humanity" with the productivity of Agile retrospectives, creating a unique and entertaining way for teams to reflect on their work.
+
+## Features
+
+- Multiplayer gameplay
+- Real-time updates using Supabase
+- Optimistic local updates with React Query
+- React-based user interface with Next.js
+- Tailwind CSS for styling
+- Framer Motion for smooth animations
 
 ## Getting Started
 
-First, run the development server:
+To run the development server:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
+bash
+npm run dev
+or
+yarn dev
+or
+pnpm dev
+```
+
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Technologies Used
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+- Next.js 14.2.5
+- React 18
+- Supabase for real-time database and authentication
+- TanStack Query for data fetching and state management
+- Tailwind CSS for styling
+- Framer Motion for animations
+- TypeScript for type-safe code
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+The project follows the standard Next.js structure with additional directories for components, hooks, and utility functions.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+This project is designed to be easily deployed on Vercel, the platform from the creators of Next.js.
 
-## Deploy on Vercel
+## Contributing
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+## License
+
+This project is private and not open for public use or distribution.
