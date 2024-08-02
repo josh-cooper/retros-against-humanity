@@ -188,6 +188,7 @@ export const useGameState = (gameId: string) => {
       votes: {},
     };
     updateGameStateMutation.mutate(newState);
+    setDiscussionTopics([]);
   };
 
   return {

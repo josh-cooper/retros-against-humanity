@@ -143,7 +143,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
           <p className="mt-2 text-xl">
             {gameState.players[gameState.winner!]} wins this round!
           </p>
-          {discussionTopics.length > 0 && (
+          {playerId === gameState.winner && discussionTopics.length > 0 && (
             <div className="mt-4">
               <h3 className="text-xl font-semibold mb-2">
                 Discussion Suggestions:
